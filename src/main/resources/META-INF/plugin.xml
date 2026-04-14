@@ -1,7 +1,7 @@
 <idea-plugin>
-    <id>com.wlzn.syncApi</id>
-    <name>wlzn Api Sync</name>
-    <vendor url="https://www.viaim.ai">wlzn</vendor>
+    <id>com.hwl.syncApi</id>
+    <name>WLZN API SYNC</name>
+    <vendor url="https://">HWL</vendor>
 
     <description><![CDATA[
         将 Spring MVC 接口的参数和返回值一键同步到 Torna 接口文档平台。<br>

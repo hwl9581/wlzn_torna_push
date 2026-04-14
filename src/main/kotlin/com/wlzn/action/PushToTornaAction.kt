@@ -15,6 +15,7 @@ import com.intellij.psi.util.PsiTreeUtil
 import com.wlzn.config.TornaSettings
 import com.wlzn.model.DocItem
 import com.wlzn.model.DocPushData
+import com.wlzn.parser.ContextPathResolver
 import com.wlzn.parser.SpringApiParser
 import com.wlzn.service.TornaApiClient
 import com.wlzn.ui.PushDocDialog
@@ -83,7 +84,14 @@ class PushToTornaAction : AnAction() {
             return
         }
 
-        val dialog = PushDocDialog(project, docItems, folderName)
+        val contextPath = ContextPathResolver.resolve(psiFile)
+        val docItemsWithContext = if (contextPath.isNotEmpty()) {
+            docItems.map { it.copy(url = contextPath + it.url) }
+        } else {
+            docItems
+        }
+
+        val dialog = PushDocDialog(project, docItemsWithContext, folderName)
         if (!dialog.showAndGet()) return
 
         folderName = dialog.folderName
@@ -93,10 +101,10 @@ class PushToTornaAction : AnAction() {
             return
         }
 
-        val finalDocItems = if (dialog.apiName != null && docItems.size == 1) {
-            listOf(docItems[0].copy(name = dialog.apiName!!))
+        val finalDocItems = if (dialog.apiName != null && docItemsWithContext.size == 1) {
+            listOf(docItemsWithContext[0].copy(name = dialog.apiName!!))
         } else {
-            docItems
+            docItemsWithContext
         }
 
         val folder = DocItem(
@@ -116,7 +124,7 @@ class PushToTornaAction : AnAction() {
 
         ProgressManager.getInstance().run(object : Task.Backgroundable(project, "推送接口到 Torna...", false) {
             override fun run(indicator: ProgressIndicator) {
-                indicator.text = "正在推送 ${docItems.size} 个接口到 [${selectedProject.name}]..."
+                indicator.text = "正在推送 ${docItemsWithContext.size} 个接口到 [${selectedProject.name}]..."
                 val result = TornaApiClient.pushDoc(serverUrl, token, pushData)
 
                 ApplicationManager.getApplication().invokeLater {
@@ -124,7 +132,7 @@ class PushToTornaAction : AnAction() {
                         onSuccess = {
                             Messages.showInfoMessage(
                                 project,
-                                "成功推送 ${docItems.size} 个接口到项目 [${selectedProject.name}]",
+                                "成功推送 ${docItemsWithContext.size} 个接口到项目 [${selectedProject.name}]",
                                 "推送成功"
                             )
                         },

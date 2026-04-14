@@ -2,10 +2,13 @@ package com.wlzn.config
 
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.DialogWrapper
+import com.intellij.openapi.ui.Messages
 import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.dsl.builder.*
 import com.intellij.ui.table.JBTable
 import javax.swing.JComponent
+import javax.swing.JPasswordField
 import javax.swing.JTextField
 import javax.swing.table.AbstractTableModel
 
@@ -40,16 +43,38 @@ class TornaSettingsConfigurable(private val project: Project) : Configurable {
 
         val tablePanel = ToolbarDecorator.createDecorator(table)
             .setAddAction {
-                projectRows.add(ProjectConfig("新项目", ""))
-                tableModel.fireTableRowsInserted(projectRows.size - 1, projectRows.size - 1)
-                table.editCellAt(projectRows.size - 1, 0)
+                val dialog = ProjectEditDialog(null)
+                if (dialog.showAndGet()) {
+                    projectRows.add(ProjectConfig(dialog.projectName, dialog.projectToken))
+                    tableModel.fireTableRowsInserted(projectRows.size - 1, projectRows.size - 1)
+                }
+            }
+            .setEditAction {
+                val row = table.selectedRow
+                if (row >= 0) {
+                    val config = projectRows[row]
+                    val dialog = ProjectEditDialog(config)
+                    if (dialog.showAndGet()) {
+                        config.name = dialog.projectName
+                        config.token = dialog.projectToken
+                        tableModel.fireTableRowsUpdated(row, row)
+                    }
+                }
             }
             .setRemoveAction {
                 val row = table.selectedRow
                 if (row >= 0) {
-                    if (table.isEditing) table.cellEditor.stopCellEditing()
-                    projectRows.removeAt(row)
-                    tableModel.fireTableRowsDeleted(row, row)
+                    val name = projectRows[row].name
+                    val confirm = Messages.showYesNoDialog(
+                        project,
+                        "确定要删除项目「$name」吗？",
+                        "删除项目",
+                        Messages.getQuestionIcon()
+                    )
+                    if (confirm == Messages.YES) {
+                        projectRows.removeAt(row)
+                        tableModel.fireTableRowsDeleted(row, row)
+                    }
                 }
             }
             .disableUpDownActions()
@@ -65,7 +90,7 @@ class TornaSettingsConfigurable(private val project: Project) : Configurable {
             group("项目列表") {
                 row {
                     cell(tablePanel).align(Align.FILL)
-                }.comment("每个项目配置独立的名称和 Token，Token 在 Torna 项目的 OpenAPI 页面获取")
+                }.comment("双击或点击编辑按钮修改项目配置，Token 在 Torna 项目的 OpenAPI 页面获取")
             }
             group("默认值") {
                 row("作者:") {
@@ -80,7 +105,6 @@ class TornaSettingsConfigurable(private val project: Project) : Configurable {
     }
 
     override fun isModified(): Boolean {
-        if (table.isEditing) table.cellEditor.stopCellEditing()
         val state = TornaSettings.getInstance(project).state
         if (serverUrlField.text != state.serverUrl ||
             authorField.text != state.author ||
@@ -92,7 +116,6 @@ class TornaSettingsConfigurable(private val project: Project) : Configurable {
     }
 
     override fun apply() {
-        if (table.isEditing) table.cellEditor.stopCellEditing()
         val settings = TornaSettings.getInstance(project)
         val newProjects = projectRows.map { ProjectConfig(it.name, it.token) }.toMutableList()
         val oldIndex = settings.state.selectedProjectIndex
@@ -127,25 +150,56 @@ class TornaSettingsConfigurable(private val project: Project) : Configurable {
         override fun getRowCount(): Int = rows.size
         override fun getColumnCount(): Int = 2
         override fun getColumnName(column: Int): String = columnNames[column]
-        override fun isCellEditable(rowIndex: Int, columnIndex: Int): Boolean = true
+        override fun isCellEditable(rowIndex: Int, columnIndex: Int): Boolean = false
 
         override fun getValueAt(rowIndex: Int, columnIndex: Int): Any {
             val row = rows[rowIndex]
             return when (columnIndex) {
                 0 -> row.name
-                1 -> row.token
+                1 -> maskToken(row.token)
                 else -> ""
             }
         }
 
-        override fun setValueAt(aValue: Any?, rowIndex: Int, columnIndex: Int) {
-            val row = rows[rowIndex]
-            val value = (aValue as? String) ?: return
-            when (columnIndex) {
-                0 -> row.name = value
-                1 -> row.token = value
+        private fun maskToken(token: String): String {
+            if (token.length <= 8) return "****"
+            return token.take(4) + "****" + token.takeLast(4)
+        }
+    }
+
+    private class ProjectEditDialog(existing: ProjectConfig?) : DialogWrapper(true) {
+
+        private val nameField = JTextField(existing?.name ?: "", 30)
+        private val tokenField = JPasswordField(existing?.token ?: "").apply { columns = 30 }
+
+        val projectName: String get() = nameField.text.trim()
+        val projectToken: String get() = String(tokenField.password).trim()
+
+        init {
+            title = if (existing == null) "添加项目" else "编辑项目"
+            init()
+        }
+
+        override fun createCenterPanel(): JComponent {
+            return panel {
+                row("项目名称:") {
+                    cell(nameField).columns(COLUMNS_LARGE)
+                }
+                row("Token:") {
+                    cell(tokenField).columns(COLUMNS_LARGE)
+                        .comment("在 Torna 项目的 OpenAPI 页面获取")
+                }
             }
-            fireTableCellUpdated(rowIndex, columnIndex)
+        }
+
+        override fun doValidate(): com.intellij.openapi.ui.ValidationInfo? {
+            if (projectName.isBlank()) {
+                return com.intellij.openapi.ui.ValidationInfo("项目名称不能为空", nameField)
+            }
+            if (projectToken.isBlank()) {
+                return com.intellij.openapi.ui.ValidationInfo("Token 不能为空", tokenField)
+            }
+            return null
         }
     }
 }
