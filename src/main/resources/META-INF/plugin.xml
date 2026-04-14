@@ -4,8 +4,14 @@
     <vendor url="https://">HWL</vendor>
 
     <description><![CDATA[
-        将 Spring MVC 接口的参数和返回值一键同步到 Torna 接口文档平台。<br>
-        支持右键 Java/Groovy 的方法或类，自动解析接口信息并推送到 Torna。
+        Torna API Sync - Spring MVC API documentation push tool.<br><br>
+        将 Spring MVC 接口定义一键同步到 Torna 接口文档平台。<br><br>
+        功能特性：<br>
+        - 自动解析 Controller 方法的请求参数、返回值、注解描述等元数据<br>
+        - 一键推送接口文档到 Torna 平台，支持覆盖更新<br>
+        - 支持多项目配置，可管理多个 Torna 项目的 Token 并缓存选择<br>
+        - 自动识别 application.yml / application.properties 中的 context-path<br>
+        - 右键 Java/Groovy 的方法或类即可推送<br>
         ]]></description>
 
     <depends>com.intellij.modules.platform</depends>

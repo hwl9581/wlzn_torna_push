@@ -33,7 +33,7 @@ intellijPlatform {
     pluginConfiguration {
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
-            untilBuild = provider { "" }
+            untilBuild = providers.gradleProperty("pluginUntilBuild")
         }
 
         changeNotes = """
