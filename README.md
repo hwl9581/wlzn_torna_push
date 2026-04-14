@@ -12,6 +12,7 @@
 - 识别 Swagger 注解（`@ApiOperation`, `@ApiModelProperty`, `@Operation`, `@Schema`）作为接口/字段描述
 - 识别 Validation 注解（`@NotNull`, `@NotBlank`）标记必填字段
 - 识别 Jackson 注解（`@JsonProperty`, `@JsonIgnore`）
+- 识别 Fastjson注解 （`@JSONField`）
 - 推送前弹出预览对话框，确认后再执行
 
 ## 使用方法
@@ -56,6 +57,9 @@
 ### Jackson
 - `@JsonProperty` → 自定义字段名
 - `@JsonIgnore` → 忽略字段
+
+### FastJson
+- `@JSONField` -> `name`定义字段名称 `label`定义字段描述
 
 ## 构建
 
