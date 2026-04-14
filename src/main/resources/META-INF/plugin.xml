@@ -1,0 +1,32 @@
+<idea-plugin>
+    <id>com.wlzn.syncApi</id>
+    <name>wlzn Api Sync</name>
+    <vendor url="https://www.viaim.ai">wlzn</vendor>
+
+    <description><![CDATA[
+        将 Spring MVC 接口的参数和返回值一键同步到 Torna 接口文档平台。<br>
+        支持右键 Java/Groovy 的方法或类，自动解析接口信息并推送到 Torna。
+        ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectConfigurable
+                parentId="tools"
+                instance="com.wlzn.config.TornaSettingsConfigurable"
+                id="com.wlzn.config.TornaSettingsConfigurable"
+                displayName="Torna Sync"/>
+    </extensions>
+
+    <actions>
+        <action id="com.wlzn.action.PushToTornaAction"
+                class="com.wlzn.action.PushToTornaAction"
+                text="Push to Torna"
+                description="推送接口到 Torna 文档平台"
+                icon="/icons/pushToTorna.svg">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
+        </action>
+    </actions>
+</idea-plugin>
